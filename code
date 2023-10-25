@@ -1,0 +1,58 @@
+import pandas as pd
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+import matplotlib.pyplot as plt
+import nltk
+from nltk.corpus import stopwords
+
+# Define a list of stop words
+stop_words = set(stopwords.words('english'))
+
+# DataFrame
+data = pd.read_csv(r"C:\Users\rushi\OneDrive\Documents\datasets\Dod.csv")
+df = pd.DataFrame(data)
+
+# Replace 'Y' with 1 and 'N' with 0 in the entire DataFrame
+df = df.applymap(lambda x: 1 if x == 'Y' else (0 if x == 'N' else x))
+
+# Replace np.nan with empty strings in text columns
+text_columns = df.select_dtypes(include=[object])
+for column in text_columns.columns:
+    df[column] = df[column].replace(np.nan, '', regex=True)
+
+# Numeric and text columns
+numeric_columns = df.select_dtypes(include=[np.number])
+text_columns = df.select_dtypes(include=[object])
+
+# Plot numeric columns as it is
+for column in numeric_columns.columns:
+    plt.figure(figsize=(6, 4))
+    plt.plot(df[column])
+    plt.title(f'Plot of Numeric Column: {column}')
+    plt.xlabel('Index')
+    plt.ylabel(column)
+    plt.show()
+
+# Apply text vectorization to text columns and plot the vectors
+vectorizer = TfidfVectorizer()
+for column in text_columns.columns:
+    # Join the text data into a single string
+    text = df[column].str.lower().str.cat(sep=' ')
+    text_vector = vectorizer.fit_transform([text])
+    plt.figure(figsize=(6, 4))
+    plt.imshow(text_vector.toarray(), cmap='viridis', aspect='auto')
+    plt.title(f'TF-IDF Vectors for Text Column: {column}')
+    plt.colorbar()
+    plt.show()
+
+# Assign 1 or 0 to indicate stop words and plot
+for column in text_columns.columns:
+    text = df[column].str.lower().str.split()  # Tokenize text into words
+    is_stop_word_array = np.array([[1 if word in stop_words else 0 for word in text_row] for text_row in text], dtype=np.int8)
+    
+    # Plot the binary array
+    plt.figure(figsize=(6, 4))
+    plt.imshow(is_stop_word_array, cmap='viridis', aspect='auto')
+    plt.title(f'Stop Words (1) and Non-Stop Words (0) for Text Column: {column}')
+    plt.colorbar()
+    plt.show()
